@@ -16,6 +16,8 @@ let savedStream;
 let savedFlow;
 let savedLaps;
 let savedLapResponse;
+let savedZoneResponse;
+let savedHeartRatePairs;
 
 let imageBase64 = null;
 let imageSize;
@@ -264,6 +266,7 @@ const kmeans = (data, attributes, saveAttributes) => {
 
 const visualizeActivityStream = async (flow, lapData) => {
     d3.selectAll("#visualization > *").remove();
+    console.log(flow);
 
     const [colours, metrics, media, times, background, direction, circle, laps, directionEnd, encoding, legend, font, units] = settings.split("_");
 
@@ -476,7 +479,12 @@ const visualizeActivityStream = async (flow, lapData) => {
     const thicknessMap = {
         "low": 0.01 / lineThicknessMultiplier,
         "medium": 0.02 / lineThicknessMultiplier,
-        "high": 0.03 / lineThicknessMultiplier
+        "high": 0.03 / lineThicknessMultiplier,
+        "1": 0.01 / lineThicknessMultiplier,
+        "2": 0.015 / lineThicknessMultiplier,
+        "3": 0.02 / lineThicknessMultiplier,
+        "4": 0.025 / lineThicknessMultiplier,
+        "5": 0.03 / lineThicknessMultiplier,
     };
 
     const dots = [];
@@ -503,22 +511,51 @@ const visualizeActivityStream = async (flow, lapData) => {
         });
     
     // Main spiral
-    svg.selectAll("path.intensity")
-        .data(flow)
-        .join("path")
-        .attr("class", "intensity")
-        .attr("transform", `translate(${width / 2}, ${width / 2})`)
-        .attr("fill", d => colourMaps[colours][d.value])
-        .attr("d", d => {
-            const angle = startAngle + d.time * angleStep;
-            const halfThickness = thicknessMap[d.value] / 2;
-            return d3.arc()({
-                innerRadius: width * (0.39 - halfThickness) - radiusStep * ((angle - startAngle) / (2 * Math.PI)),
-                outerRadius: width * (0.39 + halfThickness) - radiusStep * ((angle - startAngle) / (2 * Math.PI)),
-                startAngle: angle,
-                endAngle: angle + 1 * angleStep * ((d.timeStep > (5 * flow[flow.length - 1].time / flow.length) ? 1 : d.timeStep) + (meetsThreshold ? 12 : 1))
+    if (encoding === "h" && savedHeartRatePairs && savedZoneResponse) {
+        const getZone = (hr) => {
+            for (let i = 0; i < 4; i++) {
+                const bucket = savedZoneResponse[0].distribution_buckets[i]
+                if (hr <= bucket.max && hr >= bucket.min) {
+                    return i + 1;
+                }
+            }
+            return 5;
+        };
+
+        svg.selectAll("path.intensity")
+            .data(savedHeartRatePairs)
+            .join("path")
+            .attr("class", "intensity")
+            .attr("transform", `translate(${width / 2}, ${width / 2})`)
+            .attr("fill", d => colourMaps[colours][`${getZone(d.hr)}`])
+            .attr("d", (d, i) => {
+                const angle = startAngle + d.time * angleStep;
+                const halfThickness = thicknessMap[`${getZone(d.hr)}`] / 2;
+                return d3.arc()({
+                    innerRadius: width * (0.39 - halfThickness) - radiusStep * ((angle - startAngle) / (2 * Math.PI)),
+                    outerRadius: width * (0.39 + halfThickness) - radiusStep * ((angle - startAngle) / (2 * Math.PI)),
+                    startAngle: angle,
+                    endAngle: angle + 1 * angleStep * ((flow[i].timeStep > (5 * flow[flow.length - 1].time / flow.length) ? 1 : flow[i].timeStep) + (meetsThreshold ? 12 : 1))
+                });
             });
-        });
+    } else {
+        svg.selectAll("path.intensity")
+            .data(flow)
+            .join("path")
+            .attr("class", "intensity")
+            .attr("transform", `translate(${width / 2}, ${width / 2})`)
+            .attr("fill", d => colourMaps[colours][d.value])
+            .attr("d", d => {
+                const angle = startAngle + d.time * angleStep;
+                const halfThickness = thicknessMap[d.value] / 2;
+                return d3.arc()({
+                    innerRadius: width * (0.39 - halfThickness) - radiusStep * ((angle - startAngle) / (2 * Math.PI)),
+                    outerRadius: width * (0.39 + halfThickness) - radiusStep * ((angle - startAngle) / (2 * Math.PI)),
+                    startAngle: angle,
+                    endAngle: angle + 1 * angleStep * ((d.timeStep > (5 * flow[flow.length - 1].time / flow.length) ? 1 : d.timeStep) + (meetsThreshold ? 12 : 1))
+                });
+            });
+    }
 
     // Lap markers
     if (laps === "s") {
@@ -649,6 +686,37 @@ const visualizeActivityStream = async (flow, lapData) => {
             .attr("transform", d => `translate(${width / 2 + width * 0.43 * Math.cos(d.end)}, ${width / 2 + width * 0.43 * Math.sin(d.end)})`)
             .attr("fill", d => colourMaps[colours]["high"])
             .attr("d", d => triangleGenerator(d.end, 60));
+    }
+
+    // Legend
+    if (legend === "y") {
+        let data;
+        if (encoding === "h" && savedHeartRatePairs && savedZoneResponse) {
+            data = ["1", "2", "3", "4", "5"];
+        } else {
+            data = ["low", "medium", "high"];
+        }
+
+        const space = 0.9 * width / data.length;
+        svg.selectAll("line.legend-line")
+            .data(data)
+            .join("line")
+            .attr("class", "legend-line")
+            .attr("x1", (_, i) => 0.05 * width + (i + 1/3) * space - width * 0.02)
+            .attr("y1", width * 0.97)
+            .attr("x2", (_, i) => 0.05 * width + (i + 1/3) * space + width * 0.02)
+            .attr("y2", width * 0.97)
+            .attr("stroke", d => colourMaps[colours][d])
+            .attr("stroke-width", d => width * thicknessMap[d]);
+
+        svg.selectAll("line.legend-text")
+            .data(data)
+            .join("text")
+            .attr("x", (_, i) => 0.05 * width + (i + 2/3) * space)
+            .attr("y", width * 0.973)
+            .attr('text-anchor', "middle")
+            .attr("dominant-baseline", "middle")
+            .text(d => data.length === 5 ? "Z" + d : d);
     }
 
     // Start and end times
@@ -850,6 +918,28 @@ const downloadSvg = () => {
     convertSVGtoImg();
 };
 
+const fetchActivityZones = (activity, streams, laps) => {
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", `https://www.strava.com/api/v3/activities/${activity.id}/zones` +
+        `?keys=[${intensityStreams.join(",") + "," + otherStreams.join(",")}]&key_by_type=true`);
+    xhr.setRequestHeader("Authorization", "Bearer " + accessCode);
+    xhr.send();
+
+    xhr.onreadystatechange = (e) => {
+        if (xhr.readyState === 4) {
+            res = JSON.parse(xhr.responseText);
+            if (Array.isArray(res)) {
+                savedZoneResponse = res;
+                computeData(streams, laps);
+            } else {
+                console.log("Server error: " + res);
+                savedZoneResponse = null;
+                computeData(streams, laps);
+            }
+        }
+    };
+};
+
 const fetchActivityLaps = (activity, streams) => {
     let xhr = new XMLHttpRequest();
     xhr.open("GET", `https://www.strava.com/api/v3/activities/${activity.id}/laps` +
@@ -862,7 +952,7 @@ const fetchActivityLaps = (activity, streams) => {
             res = JSON.parse(xhr.responseText);
             if (Array.isArray(res)) {
                 savedLapResponse = res;
-                computeData(streams, res);
+                fetchActivityZones(activity, streams, res);
             } else {
                 console.log("Server error: " + res);
             }
@@ -882,6 +972,14 @@ const fetchActivityStreams = (activity) => {
             res = JSON.parse(xhr.responseText);
             if (intensityStreams.map(d => d in res).filter(d => d).length > 0) {
                 savedStream = res;
+                if ("heartrate" in res) {
+                    savedHeartRatePairs = [];
+                    res.heartrate.data.forEach((hr, i) => {
+                        savedHeartRatePairs.push({ hr: hr, time: res.time.data[i] });
+                    });
+                } else {
+                    savedHeartRatePairs = null;
+                }
                 fetchActivityLaps(activity, res);
             } else {
                 console.log("Server error: " + res);
