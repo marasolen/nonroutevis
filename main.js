@@ -390,7 +390,7 @@ const visualizeActivityStream = async (flow, lapData) => {
             .attr("rx", width / 10)
             .attr("ry", width / 10)
             .attr("fill", "white");
-    } else if (background === "p" && backgroundImageBase64 !== null) {
+    } else if ((background === "p" || background === "l") && backgroundImageBase64 !== null) {
         const xOffset = backgroundImageSize.width > backgroundImageSize.height ? (backgroundImageSize.width - backgroundImageSize.height) / 2 : 0;
         const yOffset = backgroundImageSize.height > backgroundImageSize.width ? (backgroundImageSize.height - backgroundImageSize.width) / 2 : 0;
         const ratio = xOffset > 0 ? width / backgroundImageSize.height : width / backgroundImageSize.width; 
@@ -413,7 +413,8 @@ const visualizeActivityStream = async (flow, lapData) => {
             .attr("y", -yOffset * ratio)
             .attr("width", backgroundImageSize.width * ratio)
             .attr("height", backgroundImageSize.height * ratio)
-            .attr("xlink:href", "data:image/jpeg;base64," + backgroundImageBase64);
+            .attr("xlink:href", "data:image/jpeg;base64," + backgroundImageBase64)
+            .attr("opacity", background === "p" ? 1 : 0.35)
     }
 
     // Map

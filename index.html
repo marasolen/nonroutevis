@@ -266,12 +266,19 @@
                 <div></div>
                 <div class="input-container">
                     <input type="radio" class="radio" id="photoback" name="background" value="photoback">
-                    <label for="photoback">Show photo</label><br>
+                    <label for="photoback">Opaque photo</label><br>
                 </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="lightphotoback" name="background" value="lightphotoback">
+                    <label for="lightphotoback">Light photo</label><br>
+                </div>
+                
+                <div></div>
                 <div class="input-container">
                     <input type="file" id="back-photo-upload" name="back-photo-upload" value="back-photo-upload" onchange="backgroundImageUploaded()" accept="image/png, image/jpeg">
                     <label for="back-photo-upload" id="back-photo-upload-label" style="font-style: italic;">Choose a photo</label><br>
                 </div>
+                <div></div>
             </div>
             <div class="button" id="download-button"><p class="name" style="padding-top: 1%; padding-bottom: 1%; font-weight: bold; margin-top: 4%;">Download as PNG</p></div>
             <svg id="visualization" class="visualization"></svg>

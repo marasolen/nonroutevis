@@ -37,9 +37,16 @@ const convertSVGtoImg = async () => {
     if (false) {
         window.open(dataURL, "_self");
     } else {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        const yyyy = today.getFullYear();
+
+        const todayString = yyyy + '/' + mm + '/' + dd;
+
         const a = document.createElement("a");
         a.href = dataURL;
-        a.download = "activity-intensity.png";
+        a.download = `activity-intensity-${todayString}.png`;
         document.body.appendChild(a);
         a.click();
         URL.revokeObjectURL(dataURL);
