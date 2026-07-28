@@ -20,6 +20,9 @@ let savedLapResponse;
 let imageBase64 = null;
 let imageSize;
 
+let backgroundImageBase64 = null;
+let backgroundImageSize;
+
 const imageUploaded = () => {
     const file = document.querySelector(
         'input[id=photo-upload]')['files'][0];
@@ -45,6 +48,31 @@ const imageUploaded = () => {
     reader.readAsDataURL(file);
 };
 
+const backgroundImageUploaded = () => {
+    const file = document.querySelector(
+        'input[id=back-photo-upload]')['files'][0];
+
+    const reader = new FileReader();
+    
+
+    reader.onload = function (file) {
+        base64String = reader.result.replace("data:", "")
+            .replace(/^.+,/, "");
+
+        backgroundImageBase64 = base64String;
+
+        const image = new Image();
+        image.src = file.target.result;
+
+        image.onload = function() {
+            backgroundImageSize = { width: this.width, height: this.height }
+            
+            visualizeActivityStream(savedFlow, savedLaps);
+        };
+    };
+    reader.readAsDataURL(file);
+};
+
 const getSetting = (setting) => {
     let value = "";
     const options = $(`input[name="${setting}"]`);
@@ -57,7 +85,7 @@ const getSetting = (setting) => {
 };
 
 const updateSettings = () => {
-    const newSettings = ["colour_scheme", "metrics", "map", "time", "background", "direction", "circle", "laps", "direction-end"].map(getSetting);
+    const newSettings = ["colour_scheme", "metrics", "map", "time", "background", "direction", "circle", "laps", "direction-end", "encoding", "legend", "font", "units"].map(getSetting);
     settings = newSettings.join("_");
     document.cookie = `settings=${settings}; expires=${dayjs().add(12, "month")}`;
     visualizeActivityStream(savedFlow, savedLaps);
@@ -92,9 +120,21 @@ const setupSettings = () => {
     if (settings.split("_").length === 8) {
         settings += "_n"
     }
-    let [colours, metrics, map, times, background, direction, circle, laps, directionEnd] = settings.split("_");
+    if (settings.split("_").length === 9) {
+        settings += "_i"
+    }
+    if (settings.split("_").length === 10) {
+        settings += "_y"
+    }
+    if (settings.split("_").length === 11) {
+        settings += "_d"
+    }
+    if (settings.split("_").length === 12) {
+        settings += "_k"
+    }
+    let [colours, metrics, map, times, background, direction, circle, laps, directionEnd, encoding, legend, font, units] = settings.split("_");
 
-    [colours, map, background, direction, circle, laps, directionEnd].forEach(list => {
+    [colours, map, background, direction, circle, laps, directionEnd, encoding, legend, font, units].forEach(list => {
         list = list[0];
     });
 
@@ -108,6 +148,10 @@ const setupSettings = () => {
         ["circle", circle, true],
         ["laps", laps, true],
         ["direction-end", directionEnd, false],
+        ["encoding", encoding, true],
+        ["legend", legend, true],
+        ["font", font, true],
+        ["units", units, true],
     ].map(([setting, selection, force]) => setupSetting(setting, selection, force)).join("_");
 };
 
@@ -221,7 +265,7 @@ const kmeans = (data, attributes, saveAttributes) => {
 const visualizeActivityStream = async (flow, lapData) => {
     d3.selectAll("#visualization > *").remove();
 
-    const [colours, metrics, media, times, background, direction, circle, laps, directionEnd] = settings.split("_");
+    const [colours, metrics, media, times, background, direction, circle, laps, directionEnd, encoding, legend, font, units] = settings.split("_");
 
     const meetsThreshold = circle === "t";
 
@@ -240,16 +284,56 @@ const visualizeActivityStream = async (flow, lapData) => {
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .attr("xmlns:xlink", "http://www.w3.org/1999/xlink");
 
+    const fontMap = {
+        d: defaultFont,
+        h: handFont,
+        s: serifFont,
+        m: monoFont
+    };
+
+    const distanceUnitMultiplierMap = {
+        k: 1,
+        m: 1000,
+        l: 0.6214,
+        f: 3281
+    };
+
+    const distanceUnitMap = {
+        k: "km",
+        m: "m",
+        l: "mi",
+        f: "ft"
+    };
+
+    const paceUnitDividerMap = {
+        k: 1,
+        m: 10,
+        l: 0.6214,
+        f: 32.81
+    };
+
+    const paceUnitMap = {
+        k: "min/km",
+        m: "min/100m",
+        l: "min/mi",
+        f: "min/100ft"
+    };
+
     svg.append("defs")
         .append('style')
         .attr("type", "text/css")
-        .text(`@font-face { font-family: 'Custom Font'; src: url('${font}'); }`);
+        .text(`@font-face { font-family: 'Custom Font'; src: url('${fontMap[font]}'); }`);
 
     const colourMaps = {
         s: {
             "low": "#fcccb8",
             "medium": "#fca079",
             "high": "#FC4C02",
+            "1": "#fcccb8",
+            "2": "#FCB699",
+            "3": "#fca079",
+            "4": "#FC763E",
+            "5": "#FC4C02",
             "start": "#29BF12",
             "stop": "#D91E36",
             "lap": "#420C14"
@@ -258,6 +342,11 @@ const visualizeActivityStream = async (flow, lapData) => {
             "low": "#aaaaaa",
             "medium": "#555555",
             "high": "#000000",
+            "1": "#aaaaaa",
+            "2": "#808080",
+            "3": "#555555",
+            "4": "#2B2B2B",
+            "5": "#000000",
             "start": "#29BF12",
             "stop": "#D91E36",
             "lap": "#F24333"
@@ -266,6 +355,24 @@ const visualizeActivityStream = async (flow, lapData) => {
             "low": "#33a02c",
             "medium": "#F1D302",
             "high": "#F8333C",
+            "1": "#33a02c",
+            "2": "#92BA17",
+            "3": "#F1D302",
+            "4": "#F5831F",
+            "5": "#F8333C",
+            "start": "#29BF12",
+            "stop": "#D91E36",
+            "lap": "#4C5B5C"
+        },
+        h: {
+            "low": "#313695",
+            "medium": "#6B1B5E",
+            "high": "#a50026",
+            "1": "#053061",
+            "2": "#4E2979",
+            "3": "#6B1B5E",
+            "4": "#880E42",
+            "5": "#67001f",
             "start": "#29BF12",
             "stop": "#D91E36",
             "lap": "#4C5B5C"
@@ -280,6 +387,30 @@ const visualizeActivityStream = async (flow, lapData) => {
             .attr("rx", width / 10)
             .attr("ry", width / 10)
             .attr("fill", "white");
+    } else if (background === "p" && backgroundImageBase64 !== null) {
+        const xOffset = backgroundImageSize.width > backgroundImageSize.height ? (backgroundImageSize.width - backgroundImageSize.height) / 2 : 0;
+        const yOffset = backgroundImageSize.height > backgroundImageSize.width ? (backgroundImageSize.height - backgroundImageSize.width) / 2 : 0;
+        const ratio = xOffset > 0 ? width / backgroundImageSize.height : width / backgroundImageSize.width; 
+
+        const photoArea = svg.append("g");
+
+        photoArea.append('defs')
+            .append('clipPath')
+            .attr('id', 'chart-mask')
+            .append('rect')
+            .attr("width", width)
+            .attr("height", width)
+            .attr("rx", width / 10)
+            .attr("ry", width / 10);
+
+        photoArea.attr('clip-path', 'url(#chart-mask)');
+        
+        photoArea.append("image")
+            .attr("x", -xOffset * ratio)
+            .attr("y", -yOffset * ratio)
+            .attr("width", backgroundImageSize.width * ratio)
+            .attr("height", backgroundImageSize.height * ratio)
+            .attr("xlink:href", "data:image/jpeg;base64," + backgroundImageBase64);
     }
 
     // Map
@@ -576,7 +707,7 @@ const visualizeActivityStream = async (flow, lapData) => {
             {
                 name: "distance",
                 real: "distance",
-                map: d => `${(d / 1000).toFixed(2)} km`,
+                map: d => `${(d / 1000 * distanceUnitMultiplierMap[units]).toFixed(2)} ${distanceUnitMap[units]}`,
                 weight: "normal"
             },
             {
@@ -596,7 +727,7 @@ const visualizeActivityStream = async (flow, lapData) => {
                 real: "average_speed",
                 map: d => {
                     const spkm = 1000 / d;
-                    return `${Math.floor(spkm / 60)}:${String(Math.round(spkm) % 60).padStart(2, "0")} min/km`;
+                    return `${Math.floor((spkm / paceUnitDividerMap[units]) / 60)}:${String(Math.round((spkm / paceUnitDividerMap[units])) % 60).padStart(2, "0")} ${paceUnitMap[units]}`;
                 },
                 weight: "normal"
             },

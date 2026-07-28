@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="styles.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=SN+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=SN+Pro:ital,wght@0,200..900;1,200..900&family=Edu+VIC+WA+NT+Hand:wght@400..700&family=Libertinus+Serif:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
     </head>
     <body style="margin: 0; min-height: 100vh;">
         <div class="column">
@@ -16,6 +16,34 @@
                 A tool to produce sharable visualizations of any activity data using the duration 
                 and intensity of the activity. Don't worry, we don't store any of your data, everything 
                 is done locally in the browser.
+            </p>
+            <p>                
+                The visualization shows intensity over time with a line that spirals inwards. By default, the 
+                line starts where the minute clock hand would be at the start of your activity, so if you 
+                started at 2:15pm, the line would start 90 degrees from the top. Intensity is based on 
+                multiple metrics, including heart rate, pace, and stride; the plugin pulls any data available 
+                on Strava. Any metrics that your device records but that aren't available on Strava are not
+                available in this tool. FITVis shows the more intense parts of your activity, where the 
+                metrics had higher values, as a thicker line than the less intense parts of your activity. If
+                you pause your activity, it will show as a dotted line. Since FITVis only looks at your 
+                metrics for one activity at a time, all intensity is fully relative to that activity; even 
+                an easier activity will have more and less intense moments.
+            </p>
+            <p>
+                You also have options for customizing the visualization. First off, you can choose whether you 
+                want to use the standard FITVis intensity encoding, or heart rate zones.
+                You may choose a colour scheme, which 
+                will affect the intensity colours, or different fonts, which will affect any text you include 
+                in the visualization. You can include textual and numerical details, such as the
+                activity name or average heartrate. FITVis uses whatever your activity name is on Strava, so 
+                you may want to edit your Strava post title before generating the visualization. To support 
+                different sports and cultures, you may choose the units you want to use in any numbers. You can 
+                include media such as a route outline or a photo which will appear in the centre of the 
+                visualization. You can show various markers such as lap markers, start and
+                end markers, and start and end times. You can also choose to have FITVis use the hour hand of 
+                the clock, which makes the line much more compact. Finally, you can choose to have a transparent 
+                background, which you may prefer if overlaying on another image in a separate app, a white
+                ground, or an image background.
             </p>
         </div>
 
@@ -28,6 +56,26 @@
         <div id="visualization-container" class="visualization-container column" style="display: none">
             <div class="button" id="back-button"><p class="name" style="padding-top: 1%; padding-bottom: 1%; font-weight: bold; margin-bottom: 4%;">Return to activities</p></div>
             <div class="form">
+                <p>Metric</p>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="intensity" name="encoding" value="intensity">
+                    <label for="intensity">Intensity</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="hrzones" name="encoding" value="hrzones">
+                    <label for="hrzones">HR zones</label><br>
+                </div>
+
+                <p>Legend</p>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="yes" name="legend" value="yes">
+                    <label for="yes">Yes</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="no" name="legend" value="no">
+                    <label for="no">No</label><br>
+                </div>
+
                 <p>Colour scheme</p>
                 <div class="input-container">
                     <input type="radio" class="radio" id="strava" name="colour_scheme" value="strava">
@@ -43,9 +91,32 @@
                     <input type="radio" class="radio" id="traffic" name="colour_scheme" value="traffic">
                     <label for="traffic">Traffic</label><br>
                 </div>
-                <div></div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="heat" name="colour_scheme" value="heat">
+                    <label for="heat">Heat</label><br>
+                </div>
 
-                <p>Details (if available)</p>
+                <p>Fonts</p>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="strava" name="font" value="default">
+                    <label for="strava" style="font-family: 'SN Pro', sans-serif;">Sans-serif</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="serif" name="font" value="serif">
+                    <label for="serif" style="font-family: 'Libertinus Serif', serif;">Serif</label><br>
+                </div>
+                
+                <div></div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="monospace" name="font" value="monospace">
+                    <label for="monospace" style="font-family: 'Roboto Mono', monospace;">Monospace</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="handwritten" name="font" value="handwritten">
+                    <label for="handwritten" style="font-family: 'Edu VIC WA NT Hand', cursive;">Handwritten</label><br>
+                </div>
+
+                <p>Details</p>
                 <div class="input-container">
                     <input type="checkbox" class="checkbox" id="name" name="metrics" value="name">
                     <label for="name">Activity name</label><br>
@@ -75,7 +146,27 @@
                     <label for="heartrate">Average heartrate</label><br>
                 </div>
 
-                <p>Map/Media (if available)</p>
+                <p>Units</p>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="km" name="units" value="km">
+                    <label for="km">km, min/km</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="m" name="units" value="m">
+                    <label for="m">m, min/100m</label><br>
+                </div>
+                
+                <div></div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="lesmi" name="units" value="lesmi">
+                    <label for="lesmi">mi, min/mi</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="ft" name="units" value="ft">
+                    <label for="ft">ft, min/100ft</label><br>
+                </div>
+
+                <p>Map/Media</p>
                 <div class="input-container">
                     <input type="radio" class="radio" id="hide" name="map" value="hide">
                     <label for="hide">No media</label><br>
@@ -170,6 +261,16 @@
                 <div class="input-container">
                     <input type="radio" class="radio" id="white" name="background" value="white">
                     <label for="white">White</label><br>
+                </div>
+                
+                <div></div>
+                <div class="input-container">
+                    <input type="radio" class="radio" id="photoback" name="background" value="photoback">
+                    <label for="photoback">Show photo</label><br>
+                </div>
+                <div class="input-container">
+                    <input type="file" id="back-photo-upload" name="back-photo-upload" value="back-photo-upload" onchange="backgroundImageUploaded()" accept="image/png, image/jpeg">
+                    <label for="back-photo-upload" id="back-photo-upload-label" style="font-style: italic;">Choose a photo</label><br>
                 </div>
             </div>
             <div class="button" id="download-button"><p class="name" style="padding-top: 1%; padding-bottom: 1%; font-weight: bold; margin-top: 4%;">Download as PNG</p></div>

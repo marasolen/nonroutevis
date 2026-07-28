@@ -80,6 +80,22 @@ div.input-container #photo-upload {
     display: none;
 }
 
+div.input-container #back-photo-upload {
+    padding: 10px;
+}
+
+#back-photo-upload-label {
+    background-color: #dddddd;
+}
+
+#back-photo-upload-label:hover {
+    background-color: #cccccc;
+}
+
+#back-photo-upload {
+    display: none;
+}
+
 div.button {
     width: 90%;
     margin-left: 5%;
